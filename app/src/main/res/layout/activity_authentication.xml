@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:fillViewport="true"
+    tools:context=".AuthenticationActivity"
+    >
+  <RelativeLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center"
+      >
+
+    <TextView
+        android:id="@+id/tv_loginMessage"
+        style="@style/loginPageStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/LoginMessage"
+        android:textSize="@dimen/textSizeOfAppNameOnSplash"
+        />
+
+    <EditText
+        android:id="@+id/et_userId"
+        style="@style/loginPageStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_loginMessage"
+        android:layout_marginTop="@dimen/topMarginForLogin"
+        android:hint="@string/UserId"
+        android:importantForAutofill="no"
+        android:inputType="textEmailAddress"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        />
+
+    <EditText
+        android:id="@+id/et_password"
+        style="@style/loginPageStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/et_userId"
+        android:layout_marginTop="@dimen/topMarginForLogin"
+        android:hint="@string/Password"
+        android:inputType="textPassword"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        />
+
+    <ImageView
+        android:id="@+id/showPasswordImage"
+        android:layout_width="@dimen/showPasswordImageSize"
+        android:layout_height="@dimen/showPasswordImageSize"
+        android:layout_below="@+id/et_userId"
+        android:layout_marginStart="@dimen/topMarginForShowPassword"
+        android:layout_marginTop="@dimen/topMarginForShowPassword"
+        android:layout_toEndOf="@+id/et_password"
+        android:src="@drawable/ic_show_password_eye"
+        />
+
+    <Button
+        android:id="@+id/buttonLogin"
+        style="@style/loginPageStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/et_password"
+        android:layout_marginTop="@dimen/topMarginForLogin"
+        android:padding="@dimen/loginButtonPadding"
+        android:text="@string/Login"
+        />
+  </RelativeLayout>
+</ScrollView>

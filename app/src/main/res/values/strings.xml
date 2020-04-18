@@ -1,3 +1,10 @@
 <resources>
   <string name="app_name">Self Tracker</string>
+  <string name="Login">Login</string>
+  <string name="UserId">User ID</string>
+  <string name="Password">Password</string>
+  <string name="LoginMessage">Please enter your credentials which you can use next time to login.</string>
+  <string name="passwordLessThanMinLength">Please enter a password having at least %1$d characters.</string>
+  <string name="userIdLessThanMinLength">Please enter a user Id having at least %1$d characters.</string>
+  <string name="login_failed">Login failed, please check your credentials.</string>
 </resources>

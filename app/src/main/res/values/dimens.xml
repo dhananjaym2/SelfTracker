@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <dimen name="textSizeOfAppNameOnSplash">20sp</dimen>
+  <dimen name="appIconSizeOnSplash">60dp</dimen>
+  <dimen name="topMarginForAppNameOnSplash">15dp</dimen>
+  <dimen name="loginButtonPadding">10dp</dimen>
+  <dimen name="topMarginForLogin">10dp</dimen>
+  <dimen name="topMarginForShowPassword">15dp</dimen>
+  <dimen name="showPasswordImageSize">30dp</dimen>
 </resources>
