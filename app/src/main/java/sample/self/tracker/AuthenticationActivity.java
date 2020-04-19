@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import sample.self.tracker.data.AppPreferencesHelper;
@@ -16,28 +17,41 @@ import sample.self.tracker.utils.DialogButtonCallBack;
 public class AuthenticationActivity extends AppCompatActivity
     implements View.OnClickListener, DialogButtonCallBack {
 
+  private boolean isPasswordVisible;
   private AppPreferencesHelper appPreferencesHelper;
+
+  private TextView tv_loginOrRegisterMessage;
   private EditText et_userId, et_password;
   private ImageView showPasswordImage;
   private Button buttonLogin;
-  private boolean isPasswordVisible;
 
   @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_authentication);
 
-    initViews();
-
     appPreferencesHelper = new AppPreferencesHelper(this);
+
+    initViews();
   }
 
   private void initViews() {
+    tv_loginOrRegisterMessage = findViewById(R.id.tv_loginOrRegisterMessage);
     et_userId = findViewById(R.id.et_userId);
     et_password = findViewById(R.id.et_password);
-    showPasswordImage = findViewById(R.id.showPasswordImage);
+    showPasswordImage = findViewById(R.id.showPasswordImageButton);
     showPasswordImage.setOnClickListener(this);
     buttonLogin = findViewById(R.id.buttonLogin);
     buttonLogin.setOnClickListener(this);
+
+    if (appPreferencesHelper.getUserId() != null) {
+      // a user is already registered with the app. Show the login related messages
+      tv_loginOrRegisterMessage.setText(R.string.LoginMessage);
+      buttonLogin.setText(R.string.Login);
+    } else {
+      // no user is registered with the app.
+      tv_loginOrRegisterMessage.setText(R.string.RegisterMessage);
+      buttonLogin.setText(R.string.Register);
+    }
   }
 
   @Override public void onClick(View view) {
@@ -48,7 +62,7 @@ public class AuthenticationActivity extends AppCompatActivity
         }
         break;
 
-      case R.id.showPasswordImage:
+      case R.id.showPasswordImageButton:
         et_password.setInputType(AppTextUtils.getInputTypeForPasswordField(!isPasswordVisible));
         et_password.setSelection(et_password.getText().toString().length());
         showPasswordImage.setImageResource(getDrawableForPassword(isPasswordVisible));
@@ -73,7 +87,7 @@ public class AuthenticationActivity extends AppCompatActivity
             .equalsIgnoreCase(et_password.getText().toString().trim())) {
       launchNextPage();
     } else {
-      AppUtils.showErrorMessage(this, getString(R.string.login_failed), this);
+      AppUtils.showAlertMessage(this, getString(R.string.login_failed), this);
     }
   }
 

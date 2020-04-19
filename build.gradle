@@ -32,4 +32,13 @@ ext {
 
   // Google Play location
   googlePlayLocationVersion = '16.0.0'
+
+  // Room
+  roomVersion = '2.2.4'
+
+  // lifecycle-extensions
+  lifecycleExtensionsVersion = '2.2.0'
+
+  // lifecycle-viewmodel
+  lifecycleViewModelVersion = '2.2.0'
 }

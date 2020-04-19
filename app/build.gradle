@@ -34,6 +34,13 @@ dependencies {
   // Google Play services- location
   implementation "com.google.android.gms:play-services-location:$rootProject.ext.googlePlayLocationVersion"
 
+  // Room
+  implementation "androidx.room:room-runtime:$rootProject.ext.roomVersion"
+  annotationProcessor "androidx.room:room-compiler:$rootProject.ext.roomVersion"
+
+  implementation "androidx.lifecycle:lifecycle-extensions:$rootProject.ext.lifecycleExtensionsVersion"
+  implementation "androidx.lifecycle:lifecycle-viewmodel:$rootProject.ext.lifecycleViewModelVersion"
+
   testImplementation 'junit:junit:4.12'
   androidTestImplementation 'androidx.test.ext:junit:1.1.1'
   androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
