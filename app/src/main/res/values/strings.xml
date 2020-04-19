@@ -7,4 +7,6 @@
   <string name="passwordLessThanMinLength">Please enter a password having at least %1$d characters.</string>
   <string name="userIdLessThanMinLength">Please enter a user Id having at least %1$d characters.</string>
   <string name="login_failed">Login failed, please check your credentials.</string>
+  <string name="weAreHere">We are here</string>
+  <string name="installGooglePlayServices">Please make sure that Google play services are installed and enabled to continue using this app.</string>
 </resources>

@@ -80,6 +80,7 @@ public class AuthenticationActivity extends AppCompatActivity
   private void launchNextPage() {
     Intent mapIntent = new Intent(this, MapActivity.class);
     startActivity(mapIntent);
+    finish();
   }
 
   private void storeUserCredentialsLocally() {

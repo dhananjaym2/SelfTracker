@@ -2,8 +2,11 @@ package sample.self.tracker.utils;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import sample.self.tracker.R;
 
 public class AppUtils {
@@ -29,5 +32,11 @@ public class AppUtils {
         });
     AlertDialog dialog = builder.create();
     dialog.show();
+  }
+
+  public static boolean isGooglePlayServicesAvailable(Context context) {
+    GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
+    int status = googleApiAvailability.isGooglePlayServicesAvailable(context);
+    return status == ConnectionResult.SUCCESS;
   }
 }
