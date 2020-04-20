@@ -31,31 +31,38 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.SettingsClient;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 import sample.self.tracker.data.db.UserLocation;
 import sample.self.tracker.utils.AppUtils;
 import sample.self.tracker.utils.DialogButtonCallBack;
-import sample.self.tracker.utils.NotificationUtils;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
   private static final String TAG = MapActivity.class.getSimpleName();
   private GoogleMap googleMap;
   private CircleOptions circle;
-  private LatLng currentLatLong;
   private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+  private List<Marker> listOfMarkers = new ArrayList<>();
+  private LatLngBounds.Builder markerBounds = new LatLngBounds.Builder();
 
   /**
    * Provides the entry point to the Fused Location Provider API.
@@ -94,25 +101,22 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     userLocationViewModel = new ViewModelProvider(this).get(UserLocationViewModel.class);
   }
 
-  private void showCurrentLocationOnMap() {
-    // TODO get current location
-    currentLatLong = new LatLng(12.9513005, 77.6942315);
-    this.googleMap.addMarker(
-        new MarkerOptions().position(currentLatLong).title(getString(R.string.weAreHere)));
-    addCircle(googleMap, currentLatLong);
-    //googleMap.moveCamera(CameraUpdateFactory.newLatLng(currentLatLong));
-
-    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(currentLatLong);
-    googleMap.animateCamera(cameraUpdate);
-  }
-
-  private void addCircle(GoogleMap googleMap, LatLng latLng) {
-    circle = new CircleOptions()
-        .center(latLng)
-        .radius(100)
-        .strokeWidth(4f)
-        .strokeColor(Color.RED);
-    googleMap.addCircle(circle);
+  private void showCircle(GoogleMap googleMap, LatLng latLng) {
+    if (googleMap == null) {
+      Log.e(TAG, "googleMap is null, can't show circle");
+      return;
+    }
+    if (circle == null) {
+      circle = new CircleOptions()
+          .center(latLng)
+          .radius(100)
+          .strokeWidth(4f)
+          .strokeColor(Color.RED)
+          .visible(true);
+      googleMap.addCircle(circle);
+    } else {
+      circle.center(latLng);
+    }
   }
 
   /**
@@ -147,9 +151,56 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
   private void addObserverForUserLocation() {
     userLocationViewModel.getLastUserLocationData().observe(this,
         new Observer<List<UserLocation>>() {
-          @Override public void onChanged(List<UserLocation> userLocations) {
+          @Override public void onChanged(final List<UserLocation> userLocations) {
 
-            // TODO add marker to the points received here, remove previously added.
+            //MapActivity.this.googleMap.clear();
+            for (Marker marker : listOfMarkers) {// remove all markers first
+              marker.remove();
+            }
+
+            for (int index = 0; index < userLocations.size(); index++) {
+              UserLocation userLocation = userLocations.get(index);
+
+              LatLng latLng = new LatLng(userLocation.getLat(), userLocation.getLng());
+
+              DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+              format.setTimeZone(TimeZone.getDefault());
+              String dateInString = format.format(new Date(userLocation.getTime()));
+
+              MarkerOptions markerOptions = new MarkerOptions().position(latLng)
+                  .title(dateInString);
+              Marker marker = MapActivity.this.googleMap.addMarker(markerOptions);
+              listOfMarkers.add(marker);
+              markerBounds.include(latLng);
+            }
+
+            if (userLocations.size() > 0) {
+              showCircle(MapActivity.this.googleMap,
+                  new LatLng(userLocations.get(0).getLat(), userLocations.get(0).getLng()));
+              LatLngBounds bounds = markerBounds.build();
+              MapActivity.this.googleMap.animateCamera(
+                  CameraUpdateFactory.newLatLngBounds(bounds, 50));
+              // show circle near the last/latest location
+
+              //MapActivity.this.googleMap.setOnCameraMoveStartedListener(
+              //    new GoogleMap.OnCameraMoveStartedListener() {
+              //      @Override public void onCameraMoveStarted(int i) {
+              //
+              //      }
+              //    });
+              //
+
+              //MapActivity.this.googleMap.setOnCameraIdleListener(
+              //    new GoogleMap.OnCameraIdleListener() {
+              //      @Override public void onCameraIdle() {
+              //        showCircle(MapActivity.this.googleMap,
+              //            new LatLng(userLocations.get(0).getLat(), userLocations.get(0).getLng()));
+              //        MapActivity.this.googleMap.setOnCameraIdleListener(null);
+              //      }
+              //    });
+              //showCircle(MapActivity.this.googleMap,
+              //    new LatLng(userLocations.get(0).getLat(), userLocations.get(0).getLng()));
+            }
           }
         });
   }
@@ -218,7 +269,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
           if (location != null) {
             Log.d(TAG, "onLocationResult() lat: " + location.getLatitude() + " lng:"
                 + location.getLongitude());
-            NotificationUtils.showNotificationForLocation(MapActivity.this, location);
+            //NotificationUtils.showNotificationForLocation(MapActivity.this, location);
             saveUserLocation(location);
           } else {
             Log.e(TAG, "location null in onLocationResult()");
