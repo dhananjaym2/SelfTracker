@@ -35,6 +35,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -59,7 +60,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
   private static final String TAG = MapActivity.class.getSimpleName();
   private GoogleMap googleMap;
-  private CircleOptions circle;
+  private Circle circle;
   private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
   private List<Marker> listOfMarkers = new ArrayList<>();
   private LatLngBounds.Builder markerBounds = new LatLngBounds.Builder();
@@ -106,17 +107,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
       Log.e(TAG, "googleMap is null, can't show circle");
       return;
     }
-    if (circle == null) {
-      circle = new CircleOptions()
-          .center(latLng)
-          .radius(100)
-          .strokeWidth(4f)
-          .strokeColor(Color.RED)
-          .visible(true);
-      googleMap.addCircle(circle);
-    } else {
-      circle.center(latLng);
+    if (circle != null) {// remove previously shown circle
+      circle.remove();
     }
+    CircleOptions circleOptions = new CircleOptions()
+        .center(latLng)
+        .radius(100)
+        .strokeWidth(4f)
+        .strokeColor(Color.RED)
+        .visible(true);
+    circle = googleMap.addCircle(circleOptions);
   }
 
   /**
