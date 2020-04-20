@@ -11,7 +11,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -64,6 +63,29 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
   private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
   private List<Marker> listOfMarkers = new ArrayList<>();
   private LatLngBounds.Builder markerBounds = new LatLngBounds.Builder();
+  private FusedLocationProviderClient fusedLocationProviderClient;
+  private LocationCallback locationCallback = new LocationCallback() {
+    @Override
+    public void onLocationResult(LocationResult locationResult) {
+      Location location = locationResult.getLastLocation();
+      if (location != null) {
+        Log.d(TAG, "onLocationResult() lat: " + location.getLatitude() + " lng:"
+            + location.getLongitude());
+        //NotificationUtils.showNotificationForLocation(MapActivity.this, location);
+        saveUserLocation(location);
+      } else {
+        Log.e(TAG, "location null in onLocationResult()");
+      }
+    }
+
+    private void saveUserLocation(Location locationToSave) {
+      UserLocation userLocation = new UserLocation();
+      userLocation.setLat(locationToSave.getLatitude());
+      userLocation.setLng(locationToSave.getLongitude());
+      userLocation.setTime(locationToSave.getTime());
+      userLocationViewModel.insert(userLocation);
+    }
+  };
 
   /**
    * Provides the entry point to the Fused Location Provider API.
@@ -102,6 +124,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     userLocationViewModel = new ViewModelProvider(this).get(UserLocationViewModel.class);
   }
 
+  /**
+   * Add and show circle near the specific LatLng
+   *
+   * @param googleMap GoogleMap
+   * @param latLng LatLng
+   */
   private void showCircle(GoogleMap googleMap, LatLng latLng) {
     if (googleMap == null) {
       Log.e(TAG, "googleMap is null, can't show circle");
@@ -119,11 +147,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     circle = googleMap.addCircle(circleOptions);
   }
 
+  @Override protected void onDestroy() {
+    super.onDestroy();
+    if (fusedLocationProviderClient != null && locationCallback != null) {
+      fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+    }
+  }
+
   /**
    * Manipulates the map once available.
    * This callback is triggered when the map is ready to be used.
-   * This is where we can add markers or lines, add listeners or move the camera. In this case,
-   * we just add a marker near Sydney, Australia.
+   * This is where we can add markers or lines, add listeners or move the camera.
    * If Google Play services is not installed on the device, the user will be prompted to install
    * it inside the SupportMapFragment. This method will only be triggered once the user has
    * installed Google Play services and returned to the app.
@@ -131,17 +165,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
   @Override
   public void onMapReady(GoogleMap googleMap) {
     this.googleMap = googleMap;
-    //googleMap.setMyLocationEnabled(true);
-
-    // Add a marker in Sydney and move the camera
-    //LatLng sydney = new LatLng(-34, 151);
-    //this.googleMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-    //this.googleMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-    //showCurrentLocationOnMap();
 
     addObserverForUserLocation();
 
-    if (!checkPermissions()) {
+    checkPermissions();
+  }
+
+  private void checkPermissions() {
+    if (!isPermissionGranted()) {
       requestPermissions();
     } else {
       startLocationTracking();
@@ -153,8 +184,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         new Observer<List<UserLocation>>() {
           @Override public void onChanged(final List<UserLocation> userLocations) {
 
-            //MapActivity.this.googleMap.clear();
-            for (Marker marker : listOfMarkers) {// remove all markers first
+            for (Marker marker : listOfMarkers) {// remove any previous markers first
               marker.remove();
             }
 
@@ -163,6 +193,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
               LatLng latLng = new LatLng(userLocation.getLat(), userLocation.getLng());
 
+              // to show date time as the marker title.
               DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
               format.setTimeZone(TimeZone.getDefault());
               String dateInString = format.format(new Date(userLocation.getTime()));
@@ -175,31 +206,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             }
 
             if (userLocations.size() > 0) {
+              // show circle near the last/latest location
               showCircle(MapActivity.this.googleMap,
                   new LatLng(userLocations.get(0).getLat(), userLocations.get(0).getLng()));
+
               LatLngBounds bounds = markerBounds.build();
               MapActivity.this.googleMap.animateCamera(
                   CameraUpdateFactory.newLatLngBounds(bounds, 50));
-              // show circle near the last/latest location
-
-              //MapActivity.this.googleMap.setOnCameraMoveStartedListener(
-              //    new GoogleMap.OnCameraMoveStartedListener() {
-              //      @Override public void onCameraMoveStarted(int i) {
-              //
-              //      }
-              //    });
-              //
-
-              //MapActivity.this.googleMap.setOnCameraIdleListener(
-              //    new GoogleMap.OnCameraIdleListener() {
-              //      @Override public void onCameraIdle() {
-              //        showCircle(MapActivity.this.googleMap,
-              //            new LatLng(userLocations.get(0).getLat(), userLocations.get(0).getLng()));
-              //        MapActivity.this.googleMap.setOnCameraIdleListener(null);
-              //      }
-              //    });
-              //showCircle(MapActivity.this.googleMap,
-              //    new LatLng(userLocations.get(0).getLat(), userLocations.get(0).getLng()));
             }
           }
         });
@@ -207,13 +220,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
   private void startLocationTracking() {
     LocationRequest locationRequest = new LocationRequest();
-    final long INTERVAL_LOCATION_UPDATES = 30000;
+    final long INTERVAL_LOCATION_UPDATES = 30000;// in milli seconds
     locationRequest.setInterval(INTERVAL_LOCATION_UPDATES);
-    final long FASTEST_INTERVAL_LOCATION_UPDATES = 30000;
-    locationRequest.setFastestInterval(FASTEST_INTERVAL_LOCATION_UPDATES);
+    locationRequest.setFastestInterval(INTERVAL_LOCATION_UPDATES);
     locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-    FusedLocationProviderClient fusedLocationProviderClient =
+    fusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(this);
     int locationPermission =
         ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
@@ -262,28 +274,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             }
           });
 
-      fusedLocationProviderClient.requestLocationUpdates(locationRequest, new LocationCallback() {
-        @Override
-        public void onLocationResult(LocationResult locationResult) {
-          Location location = locationResult.getLastLocation();
-          if (location != null) {
-            Log.d(TAG, "onLocationResult() lat: " + location.getLatitude() + " lng:"
-                + location.getLongitude());
-            //NotificationUtils.showNotificationForLocation(MapActivity.this, location);
-            saveUserLocation(location);
-          } else {
-            Log.e(TAG, "location null in onLocationResult()");
-          }
-        }
-
-        private void saveUserLocation(Location locationToSave) {
-          UserLocation userLocation = new UserLocation();
-          userLocation.setLat(locationToSave.getLatitude());
-          userLocation.setLng(locationToSave.getLongitude());
-          userLocation.setTime(locationToSave.getTime());
-          userLocationViewModel.insert(userLocation);
-        }
-      }, null);
+      fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null);
     }
   }
 
@@ -307,49 +298,19 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
               Toast.makeText(MapActivity.this,
                   "loc: " + mLastLocation.getLatitude() + mLastLocation.getLongitude(),
                   Toast.LENGTH_LONG).show();
-              //mLatitudeText.setText(String.format(Locale.ENGLISH, "%s: %f",
-              //    mLatitudeLabel,
-              //    mLastLocation.getLatitude()));
-              //mLongitudeText.setText(String.format(Locale.ENGLISH, "%s: %f",
-              //    mLongitudeLabel,
-              //    mLastLocation.getLongitude()));
             } else {
               Log.w(TAG, "getLastLocation:exception", task.getException());
-              showSnackbar(getString(R.string.no_location_detected));
+              AppUtils.showAlertMessage(MapActivity.this, getString(R.string.no_location_detected),
+                  null);
             }
           }
         });
   }
 
   /**
-   * @param text The Snackbar text.
-   */
-  private void showSnackbar(final String text) {
-    //View container = findViewById(R.id.main_activity_container);
-    //if (container != null) {
-    //  Snackbar.make(container, text, Snackbar.LENGTH_LONG).show();
-    //}
-    AppUtils.showAlertMessage(this, text, null/*listener*/);
-  }
-
-  /**
-   * @param mainTextStringId The id for the string resource for the Snackbar text.
-   * @param actionStringId The text of the action item.
-   * @param listener The listener associated with the Snackbar action.
-   */
-  private void showSnackbar(final int mainTextStringId, final int actionStringId,
-      View.OnClickListener listener) {
-    //Snackbar.make(findViewById(android.R.id.content),
-    //    getString(mainTextStringId),
-    //    Snackbar.LENGTH_INDEFINITE)
-    //    .setAction(getString(actionStringId), listener).show();
-    AppUtils.showAlertMessage(this, getString(mainTextStringId), null/*listener*/);
-  }
-
-  /**
    * Return the current state of the permissions needed.
    */
-  private boolean checkPermissions() {
+  private boolean isPermissionGranted() {
     int permissionState = ActivityCompat.checkSelfPermission(this,
         Manifest.permission.ACCESS_FINE_LOCATION);
     return permissionState == PackageManager.PERMISSION_GRANTED;
@@ -371,12 +332,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     if (shouldProvideRationale) {
       Log.i(TAG, "Displaying permission rationale to provide additional context.");
 
-      showSnackbar(R.string.permission_rationale, android.R.string.ok,
-          new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-              // Request permission
-              startLocationPermissionRequest();
+      AppUtils.showAlertMessageWith2Buttons(this, getString(R.string.permission_rationale),
+          getString(R.string.grantPermission), getString(android.R.string.cancel),
+          new DialogButtonCallBack() {
+            @Override public void onDialogButtonClick(Intent intent) {
+              if (intent.getBooleanExtra(DialogButtonCallBack.clickedValue, false)) {
+                // Request permission
+                startLocationPermissionRequest();
+              } else {
+                // user clicked cancel in rationale.
+                checkPermissions();
+              }
             }
           });
     } else {
@@ -406,28 +372,29 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
       } else {
         // Permission denied.
 
-        // Notify the user via a SnackBar that they have rejected a core permission for the
-        // app, which makes the Activity useless. In a real app, core permissions would
-        // typically be best requested during a welcome-screen flow.
+        // Notify the user that they have rejected a core permission for the app, which makes the
+        // Activity useless.
 
-        // Additionally, it is important to remember that a permission might have been
-        // rejected without asking the user for permission (device policy or "Never ask
-        // again" prompts). Therefore, a user interface affordance is typically implemented
-        // when permissions are denied. Otherwise, your app could appear unresponsive to
-        // touches or interactions which have required permissions.
-        showSnackbar(R.string.permission_denied_explanation, R.string.settings,
-            new View.OnClickListener() {
-              @Override
-              public void onClick(View view) {
-                // Build intent that displays the App settings screen.
-                Intent intent = new Intent();
-                intent.setAction(
-                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                Uri uri = Uri.fromParts("package",
-                    BuildConfig.APPLICATION_ID, null);
-                intent.setData(uri);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
+        AppUtils.showAlertMessageWith2Buttons(this,
+            getString(R.string.permission_denied_explanation),
+            getString(R.string.settings), getString(android.R.string.cancel),
+            new DialogButtonCallBack() {
+              @Override public void onDialogButtonClick(Intent intent) {
+                if (intent.getBooleanExtra(DialogButtonCallBack.clickedValue, false)) {
+
+                  // Build intent that displays the App settings screen.
+                  Intent intentForAppSettings = new Intent();
+                  intentForAppSettings.setAction(
+                      Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                  Uri uri = Uri.fromParts("package",
+                      BuildConfig.APPLICATION_ID, null);
+                  intentForAppSettings.setData(uri);
+                  intentForAppSettings.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  startActivity(intentForAppSettings);
+                } else {
+                  // user clicked cancel in rationale.
+                  checkPermissions();
+                }
               }
             });
       }
