@@ -391,6 +391,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                   intentForAppSettings.setData(uri);
                   intentForAppSettings.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                   startActivity(intentForAppSettings);
+                  finish();
                 } else {
                   // user clicked cancel in rationale.
                   checkPermissions();

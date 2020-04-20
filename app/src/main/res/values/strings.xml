@@ -11,7 +11,7 @@
   <string name="weAreHere">We are here</string>
   <string name="installGooglePlayServices">Please make sure that Google play services are installed and enabled to continue using this app.</string>
   <string name="settings">Settings</string>
-  <string name="permission_denied_explanation">Location permissions are required by this app to track you.</string>
+  <string name="permission_denied_explanation">Location permissions are required by this app to track you. Please grant again and launch this app again.</string>
   <string name="no_location_detected">No location detected</string>
   <string name="permission_rationale">Location permissions are required by this app to track you. Please grant them to use this app.</string>
   <string name="Register">Register</string>
